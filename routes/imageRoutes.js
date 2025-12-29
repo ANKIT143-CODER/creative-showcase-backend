@@ -5,6 +5,7 @@ import Image from '../models/Image.js'
 import {
   uploadImage,
   getMyImages,
+  deleteImage,
 } from '../controllers/imageController.js'
 
 const router = express.Router()
@@ -43,5 +44,6 @@ router.post(
 
 // 🔐 PRIVATE: Get logged-in user's images (Dashboard)
 router.get('/my-images', protect, getMyImages)
+router.delete('/:id', protect, deleteImage)
 
 export default router
