@@ -1,4 +1,11 @@
 import Image from '../models/Image.js'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // 📤 Upload Image
 export const uploadImage = async (req, res) => {
@@ -21,22 +28,38 @@ export const getMyImages = async (req, res) => {
     const images = await Image.find({ user: req.user._id }).sort({
       createdAt: -1,
     })
-
     res.json(images)
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch images' })
   }
 }
 
-// 🌍 Get public user's images
-export const getUserImages = async (req, res) => {
+// 🗑 Delete image (OWNER ONLY)
+export const deleteImage = async (req, res) => {
   try {
-    const images = await Image.find({ user: req.params.userId }).sort({
-      createdAt: -1,
-    })
+    const image = await Image.findById(req.params.id)
 
-    res.json(images)
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' })
+    }
+
+    // Ownership check
+    if (image.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized' })
+    }
+
+    // Delete file from uploads folder
+    const filePath = path.join(__dirname, '..', image.imageUrl)
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+    }
+
+    // Delete from database
+    await image.deleteOne()
+
+    res.json({ message: 'Image deleted successfully' })
   } catch (error) {
-    res.status(404).json({ message: 'User images not found' })
+    res.status(500).json({ message: 'Failed to delete image' })
   }
 }
