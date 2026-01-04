@@ -1,26 +1,18 @@
 import express from 'express'
 import multer from 'multer'
 import protect from '../middleware/authMiddleware.js'
-import Image from '../models/Image.js'
 import {
   uploadImage,
   getMyImages,
   deleteImage,
 } from '../controllers/imageController.js'
+import Image from '../models/Image.js'
 
 const router = express.Router()
 
-// ================= MULTER CONFIG =================
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`)
-  },
-})
-
-const upload = multer({ storage })
+// ================= MULTER (TEMP STORAGE) =================
+// Files are stored temporarily in /temp and sent to Cloudinary
+const upload = multer({ dest: 'temp/' })
 
 // ================= ROUTES =================
 
@@ -34,7 +26,7 @@ router.get('/', async (req, res) => {
   }
 })
 
-// 🔐 PRIVATE: Upload image
+// 🔐 PRIVATE: Upload image (Cloudinary)
 router.post(
   '/upload',
   protect,
@@ -44,6 +36,8 @@ router.post(
 
 // 🔐 PRIVATE: Get logged-in user's images (Dashboard)
 router.get('/my-images', protect, getMyImages)
+
+// 🔐 PRIVATE: Delete image (Cloudinary + DB)
 router.delete('/:id', protect, deleteImage)
 
 export default router
