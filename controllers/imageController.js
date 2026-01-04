@@ -1,18 +1,17 @@
 import Image from '../models/Image.js'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import cloudinary from '../config/cloudinary.js'
 
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// 📤 Upload Image
+// 📤 Upload Image (Cloudinary)
 export const uploadImage = async (req, res) => {
   try {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'creative_showcase',
+    })
+
     const image = await Image.create({
       title: req.body.title,
-      imageUrl: `/uploads/${req.file.filename}`,
+      imageUrl: result.secure_url,
+      cloudinaryId: result.public_id,
       user: req.user._id,
     })
 
@@ -34,7 +33,7 @@ export const getMyImages = async (req, res) => {
   }
 }
 
-// 🗑 Delete image (OWNER ONLY)
+// 🗑 Delete image (Cloudinary + DB)
 export const deleteImage = async (req, res) => {
   try {
     const image = await Image.findById(req.params.id)
@@ -43,19 +42,14 @@ export const deleteImage = async (req, res) => {
       return res.status(404).json({ message: 'Image not found' })
     }
 
-    // Ownership check
     if (image.user.toString() !== req.user._id.toString()) {
       return res.status(401).json({ message: 'Not authorized' })
     }
 
-    // Delete file from uploads folder
-    const filePath = path.join(__dirname, '..', image.imageUrl)
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(image.cloudinaryId)
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath)
-    }
-
-    // Delete from database
+    // Delete from DB
     await image.deleteOne()
 
     res.json({ message: 'Image deleted successfully' })
