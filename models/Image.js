@@ -10,6 +10,10 @@ const imageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    cloudinaryId: {
+      type: String,
+      required: true,
+    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -19,6 +23,5 @@ const imageSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-const Image = mongoose.model('Image', imageSchema)
+export default mongoose.model('Image', imageSchema)
 
-export default Image
